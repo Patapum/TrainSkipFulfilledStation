@@ -1,14 +1,10 @@
-script.on_load(
-    function()
-        script.on_event(
-            {defines.events.on_train_changed_state},
-            function(e)
-                local train = e.train
-                if train.manual_mode == false then
-                    UpdateNextTrainStation(train)
-                end
-            end
-        )
+script.on_event(
+    {defines.events.on_train_changed_state},
+    function(e)
+        local train = e.train
+        if train.manual_mode == false then
+            UpdateNextTrainStation(train)
+        end
     end
 )
 
