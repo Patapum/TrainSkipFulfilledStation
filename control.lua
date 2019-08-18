@@ -20,7 +20,8 @@ end
 function GetNextNotFulfilled(train)
     local index = train.schedule.current
     repeat
-        if IsAllFulfilled(train, train.schedule.records[index].wait_conditions) == false then
+        if IsAllFulfilled(train, train.schedule.records[index].wait_conditions) == false and
+          AnyStationEnabled(train.schedule.records[index].station) then
             break
         end
         index = NextScheduleIndex(index, #train.schedule.records)
@@ -124,4 +125,17 @@ function CheckCondition(condition, get_count)
     else
         return count_first > count_second
     end
+end
+
+function AnyStationEnabled(station_name)
+    local stations = game.get_train_stops({name = station_name})
+    
+    for _, station in pairs(stations) do
+        local control = station.get_control_behavior()
+        if control == nil or control.disabled == false then
+            return true
+        end
+    end
+    
+    return false
 end
