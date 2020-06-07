@@ -8,6 +8,15 @@ script.on_event(
     end
 )
 
+local CheckCircuitConditions = settings.global["TrainSkipFulfilledStation-CheckCircuitConditions"].value
+
+script.on_event(
+    defines.events.on_runtime_mod_setting_changed,
+    function(event)
+        CheckCircuitConditions = settings.global["TrainSkipFulfilledStation-CheckCircuitConditions"].value
+    end
+)
+
 function UpdateNextTrainStation(train)
     if train.schedule ~= nil then
         local next = GetNextNotFulfilled(train)
@@ -66,7 +75,7 @@ function IsFulfilled(train, station, wait_condition)
         return CheckCondition(wait_condition.condition, function(signal_id) return train.get_item_count(signal_id.name) end)
     elseif wait_condition.type == "fluid_count" then
         return CheckCondition(wait_condition.condition, function(signal_id) return train.get_fluid_count(signal_id.name) end)
-    elseif wait_condition.type == "circuit" and station ~= nil then
+    elseif wait_condition.type == "circuit" and CheckCircuitConditions and station ~= false then
         return CheckCondition(wait_condition.condition, station.get_merged_signal)
     else
         return false
