@@ -39,7 +39,11 @@ end
 function IsAllFulfilled(train, schedule_record)
     local result = nil
     if schedule_record.wait_conditions ~= nil then
-        local station = game.get_train_stops({name = schedule_record.station})[1]
+        local station = nil
+        if train.path_end_stop ~= nil and train.path_end_stop.backer_name == schedule_record.station then
+            station = train.path_end_stop
+        end
+
         for _, wait_condition in pairs(schedule_record.wait_conditions) do
             if result == nil then
                 result = IsFulfilled(train, station, wait_condition)
@@ -62,7 +66,7 @@ function IsFulfilled(train, station, wait_condition)
         return CheckCondition(wait_condition.condition, function(signal_id) return train.get_item_count(signal_id.name) end)
     elseif wait_condition.type == "fluid_count" then
         return CheckCondition(wait_condition.condition, function(signal_id) return train.get_fluid_count(signal_id.name) end)
-    elseif wait_condition.type == "circuit" then
+    elseif wait_condition.type == "circuit" and station ~= nil then
         return CheckCircuitNetwork(station, wait_condition.condition)
     else
         return false
