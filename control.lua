@@ -67,7 +67,7 @@ function IsFulfilled(train, station, wait_condition)
     elseif wait_condition.type == "fluid_count" then
         return CheckCondition(wait_condition.condition, function(signal_id) return train.get_fluid_count(signal_id.name) end)
     elseif wait_condition.type == "circuit" and station ~= nil then
-        return CheckCircuitNetwork(station, wait_condition.condition)
+        return CheckCondition(wait_condition.condition, station.get_merged_signal)
     else
         return false
     end
@@ -105,22 +105,6 @@ end
 
 function CheckEmpty(train)
     return train.get_item_count() == 0 and train.get_fluid_count() == 0
-end
-
-function CheckCircuitNetwork(station, wait_condition)
-    local result = CheckSingleCircuitNetwork(station.get_circuit_network(defines.wire_type.red), wait_condition)
-    if not result then
-        return CheckSingleCircuitNetwork(station.get_circuit_network(defines.wire_type.green), wait_condition)
-    end
-    
-    return true
-end
-
-function CheckSingleCircuitNetwork(network, wait_condition)
-    if network ~= nil then
-        return CheckCondition(wait_condition, network.get_signal)
-    end
-    return false
 end
 
 function CheckCondition(condition, get_count)
