@@ -8,6 +8,15 @@ script.on_event(
     end
 )
 
+local SkipEmpty = settings.global["TrainSkipFulfilledStation-SkipEmpty"].value
+
+script.on_event(
+    defines.events.on_runtime_mod_setting_changed,
+    function(event)
+        SkipEmpty = settings.global["TrainSkipFulfilledStation-SkipEmpty"].value
+    end
+)
+
 function UpdateNextTrainStation(train)
     if train.schedule ~= nil then
         local next = GetNextNotFulfilled(train)
@@ -19,6 +28,9 @@ end
 
 function GetNextNotFulfilled(train)
     local index = train.schedule.current
+    if SkipEmpty == false and train.state == defines.train_state.arrive_station and train.schedule.records[index].wait_conditions == nil then
+        index = NextScheduleIndex(index, #train.schedule.records)
+    end
     repeat
         if IsAllFulfilled(train, train.schedule.records[index].wait_conditions) == false then
             break
@@ -37,7 +49,7 @@ function NextScheduleIndex(current, recordsCount)
 end
 
 function IsAllFulfilled(train, wait_conditions)
-    local result = nil
+    local result = SkipEmpty
     local and_result = true
     if wait_conditions ~= nil then
         for i = #wait_conditions, 1, -1 do
