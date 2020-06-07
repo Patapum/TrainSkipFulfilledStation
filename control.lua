@@ -1,5 +1,5 @@
 script.on_event(
-    {defines.events.on_train_changed_state},
+    {defines.events.on_train_changed_state, defines.events.on_train_schedule_changed},
     function(e)
         local train = e.train
         if train.manual_mode == false then
