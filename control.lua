@@ -19,11 +19,14 @@ script.on_event(
     end
 )
 
+local UpdateNextTrainStationLock = true
 function UpdateNextTrainStation(train)
-    if train.schedule ~= nil then
+    if UpdateNextTrainStationLock and train.schedule ~= nil then
         local next = GetNextNotFulfilled(train)
         if train.schedule.current ~= next then
+            UpdateNextTrainStationLock = false
             train.schedule = {current = next, records = train.schedule.records}
+            UpdateNextTrainStationLock = true
         end
     end
 end
