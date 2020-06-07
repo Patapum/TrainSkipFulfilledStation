@@ -78,6 +78,10 @@ function IsFulfilled(train, wait_condition)
         return CheckCondition(wait_condition.condition, train.get_item_count)
     elseif wait_condition.type == "fluid_count" then
         return CheckCondition(wait_condition.condition, train.get_fluid_count)
+    elseif wait_condition.type == "passenger_present" then
+        return CheckPassengerPresent(train)
+    elseif wait_condition.type == "passenger_not_present" then
+        return CheckPassengerPresent(train) == false
     else
         return false
     end
@@ -141,4 +145,8 @@ function CheckCondition(condition, get_count)
     else
         return count_first > count_second
     end
+end
+
+function CheckPassengerPresent(train)
+    return #train.passengers > 0
 end
