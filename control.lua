@@ -2,7 +2,7 @@ script.on_event(
     {defines.events.on_train_changed_state, defines.events.on_train_schedule_changed},
     function(e)
         local train = e.train
-        if train.manual_mode == false then
+        if train.manual_mode == false and train.state ~= defines.train_state.wait_station then
             UpdateNextTrainStation(train)
         end
     end
@@ -85,8 +85,16 @@ function IsFulfilled(train, station, wait_condition)
         return CheckCondition(wait_condition.condition, function(signal_id) return train.get_item_count(signal_id.name) end)
     elseif wait_condition.type == "fluid_count" then
         return CheckCondition(wait_condition.condition, function(signal_id) return train.get_fluid_count(signal_id.name) end)
-    elseif wait_condition.type == "circuit" and CheckCircuitConditions and station ~= nil then
-        return CheckCondition(wait_condition.condition, station.get_merged_signal)
+    elseif wait_condition.type == "circuit" then
+        if CheckCircuitConditions then
+            if station ~= nil then
+                return CheckCondition(wait_condition.condition, station.get_merged_signal)
+            else
+                return false
+            end
+        else
+            return CheckCondition(wait_condition.condition, function(signal_id) return 0 end)
+        end
     elseif wait_condition.type == "passenger_present" then
         return CheckPassengerPresent(train)
     elseif wait_condition.type == "passenger_not_present" then
@@ -130,15 +138,17 @@ function CheckEmpty(train)
     return train.get_item_count() == 0 and train.get_fluid_count() == 0
 end
 
+local NaN = 0/0
+
 function CheckCondition(condition, get_count)
     if condition == nil then
         return false
     end
 
     local count_first =
-        condition.first_signal == nil and 0 or get_count(condition.first_signal)
+        condition.first_signal == nil and NaN or get_count(condition.first_signal)
     local count_second =
-        condition.second_signal == nil and (condition.constant or 0) or
+        condition.second_signal == nil and (condition.constant or NaN) or
         get_count(condition.second_signal)
 
     if condition.comparator == "<" then
