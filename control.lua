@@ -38,14 +38,19 @@ end
 
 function IsAllFulfilled(train, wait_conditions)
     local result = nil
+    local and_result = true
     if wait_conditions ~= nil then
-        for _, wait_condition in pairs(wait_conditions) do
-            if result == nil then
-                result = IsFulfilled(train, wait_condition)
-            elseif wait_condition.compare_type == "and" then
-                result = result and IsFulfilled(train, wait_condition)
+        for i = #wait_conditions, 1, -1 do
+            local wait_condition = wait_conditions[i]
+            and_result = and_result and IsFulfilled(train, wait_condition)
+            if wait_condition.compare_type == "or" then
+                if and_result then
+                    return true
+                else
+                    result = false
+                end
+                and_result = true
             else
-                result = result or IsFulfilled(train, wait_condition)
             end
         end
     end
