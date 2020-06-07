@@ -20,7 +20,7 @@ end
 function GetNextNotFulfilled(train)
     local index = train.schedule.current
     repeat
-        if IsAllFulfilled(train, train.schedule.records[index].wait_conditions) == false then
+        if IsAllFulfilled(train, train.schedule.records[index]) == false then
             break
         end
         index = NextScheduleIndex(index, #train.schedule.records)
@@ -36,31 +36,34 @@ function NextScheduleIndex(current, recordsCount)
     return current
 end
 
-function IsAllFulfilled(train, wait_conditions)
+function IsAllFulfilled(train, schedule_record)
     local result = nil
-    if wait_conditions ~= nil then
-        for _, wait_condition in pairs(wait_conditions) do
+    if schedule_record.wait_conditions ~= nil then
+        local station = game.get_train_stops({name = schedule_record.station})[1]
+        for _, wait_condition in pairs(schedule_record.wait_conditions) do
             if result == nil then
-                result = IsFulfilled(train, wait_condition)
+                result = IsFulfilled(train, station, wait_condition)
             elseif wait_condition.compare_type == "and" then
-                result = result and IsFulfilled(train, wait_condition)
+                result = result and IsFulfilled(train, station, wait_condition)
             else
-                result = result or IsFulfilled(train, wait_condition)
+                result = result or IsFulfilled(train, station, wait_condition)
             end
         end
     end
     return result
 end
 
-function IsFulfilled(train, wait_condition)
+function IsFulfilled(train, station, wait_condition)
     if wait_condition.type == "full" then
         return CheckFull(train)
     elseif wait_condition.type == "empty" then
         return CheckEmpty(train)
     elseif wait_condition.type == "item_count" then
-        return CheckCondition(wait_condition.condition, train.get_item_count)
+        return CheckCondition(wait_condition.condition, function(signal_id) return train.get_item_count(signal_id.name) end)
     elseif wait_condition.type == "fluid_count" then
-        return CheckCondition(wait_condition.condition, train.get_fluid_count)
+        return CheckCondition(wait_condition.condition, function(signal_id) return train.get_fluid_count(signal_id.name) end)
+    elseif wait_condition.type == "circuit" then
+        return CheckCircuitNetwork(station, wait_condition.condition)
     else
         return false
     end
@@ -100,16 +103,32 @@ function CheckEmpty(train)
     return train.get_item_count() == 0 and train.get_fluid_count() == 0
 end
 
+function CheckCircuitNetwork(station, wait_condition)
+    local result = CheckSingleCircuitNetwork(station.get_circuit_network(defines.wire_type.red), wait_condition)
+    if not result then
+        return CheckSingleCircuitNetwork(station.get_circuit_network(defines.wire_type.green), wait_condition)
+    end
+    
+    return true
+end
+
+function CheckSingleCircuitNetwork(network, wait_condition)
+    if network ~= nil then
+        return CheckCondition(wait_condition, network.get_signal)
+    end
+    return false
+end
+
 function CheckCondition(condition, get_count)
     if condition == nil then
         return false
     end
 
     local count_first =
-        condition.first_signal == nil and 0 or get_count(condition.first_signal.name)
+        condition.first_signal == nil and 0 or get_count(condition.first_signal)
     local count_second =
         condition.second_signal == nil and (condition.constant or 0) or
-        get_count(condition.second_signal.name)
+        get_count(condition.second_signal)
 
     if condition.comparator == "<" then
         return count_first < count_second
