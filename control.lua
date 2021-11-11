@@ -66,7 +66,7 @@ function IsAllFulfilled(train, schedule_record)
         for i = #wait_conditions, 1, -1 do
             local wait_condition = wait_conditions[i]
             and_result = and_result and IsFulfilled(train, station, wait_condition)
-            if wait_condition.compare_type == "or" then
+            if i == 1 or wait_condition.compare_type == "or" then
                 if and_result then
                     return true
                 else
